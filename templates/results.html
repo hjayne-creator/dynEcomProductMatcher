@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Results - Product Competitor Matches</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 1.5rem; }
+      a { color: #0d6efd; text-decoration: none; }
+      .grid { display: grid; grid-template-columns: 1fr; gap: 1rem; max-width: 1000px; margin: 0 auto; }
+      .card { padding: 1rem; border: 1px solid #eee; border-radius: 12px; box-shadow: 0 2px 14px rgba(0,0,0,.04); }
+      h2 { font-size: 1.2rem; margin: 0 0 .5rem; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { padding: .5rem .5rem; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      pre { white-space: pre-wrap; word-break: break-word; }
+      .view-btn { padding: .35rem .6rem; border: 1px solid #ddd; background: #f8f9fa; border-radius: 6px; cursor: pointer; }
+      .details-row { display: none; }
+      .details-cell { background: #fafafa; }
+      .details-cell .mono { margin: .15rem 0; }
+    </style>
+  </head>
+  <body>
+    <div class="grid">
+      <div class="card">
+        <a href="/">← New analysis</a>
+        <h2>Your product</h2>
+        <div><a href="{{ results.seed.url }}" target="_blank" rel="noopener">{{ results.seed.url }}</a></div>
+        <div class="mono">Title: {{ results.seed.signals.title }}</div>
+        <div class="mono">Brand: {{ results.seed.signals.brand }}</div>
+        {% if results.seed.signals.identifiers %}
+          <div style="margin-top:.5rem;">
+            <strong>Identifiers used in matching</strong>
+            <ul class="mono" style="margin:.3rem 0 0 1rem; padding:0; list-style:disc;">
+              {% for k, v in results.seed.signals.identifiers.items() %}
+                <li>{{ k|upper }}: {{ v }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+        {% if results.seed.signals.attributes %}
+          <div style="margin-top:.5rem;">
+            <strong>Key attributes used in matching</strong>
+            <ul class="mono" style="margin:.3rem 0 0 1rem; padding:0; list-style:disc;">
+              {% for k, v in (results.seed.signals.attributes.items() | list)[:8] %}
+                <li>{{ k }}: {{ v }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <h2>Competitor matches</h2>
+        {% set seed_ids = results.seed.signals.identifiers or {} %}
+        {% set seed_attrs = results.seed.signals.attributes or {} %}
+        <table>
+          <thead>
+            <tr>
+              <th>Domain</th>
+              <th>Similarity</th>
+              <th>Link</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in results.competitors %}
+              <tr>
+                <td>{{ c.domain }}</td>
+                <td>{{ '%.3f' % c.similarity }}</td>
+                <td><a href="{{ c.url }}" target="_blank" rel="noopener">Open</a></td>
+                <td>
+                  <button type="button" class="view-btn" onclick="toggleDetails('det-{{ loop.index0 }}', this)">View</button>
+                </td>
+              </tr>
+              <tr id="det-{{ loop.index0 }}" class="details-row">
+                <td colspan="4" class="details-cell">
+                  <div style="margin-top:.2rem;">
+                    <div class="mono">Title: {{ c.signals.title }}</div>
+                    <div class="mono">Brand: {{ c.signals.brand }}</div>
+                  </div>
+                  {% set ids = c.signals.identifiers or {} %}
+                  <div style="margin-top:.4rem;"><strong>Identifiers</strong></div>
+                  <ul class="mono" style="margin:.2rem 0 0 1rem; padding:0; list-style:disc;">
+                    {% if ids|length > 0 %}
+                      {% for k, v in ids.items() %}
+                        {% set is_match = (seed_ids.get(k) | default('') | lower) == (v | lower) %}
+                        <li>
+                          {% if is_match %}
+                            <strong>{{ k|upper }}: {{ v }}</strong>
+                            <span style="background:#e6ffed;border:1px solid #a7f3d0;color:#065f46;padding:0 .25rem;border-radius:4px;font-size:.75em;margin-left:.25rem;">match</span>
+                          {% else %}
+                            {{ k|upper }}: {{ v }}
+                          {% endif %}
+                        </li>
+                      {% endfor %}
+                    {% else %}
+                      <li style="color:#666;">None</li>
+                    {% endif %}
+                  </ul>
+                  {% set attrs = c.signals.attributes or {} %}
+                  <div style="margin-top:.4rem;"><strong>Key attributes</strong></div>
+                  <ul class="mono" style="margin:.2rem 0 0 1rem; padding:0; list-style:disc;">
+                    {% if attrs|length > 0 %}
+                      {% for k, v in (attrs.items() | list)[:8] %}
+                        {% set is_attr_match = (seed_attrs.get(k) | default('') | lower) == (v | lower) %}
+                        <li>
+                          {% if is_attr_match %}
+                            <strong>{{ k }}: {{ v }}</strong>
+                            <span style="background:#e6ffed;border:1px solid #a7f3d0;color:#065f46;padding:0 .25rem;border-radius:4px;font-size:.75em;margin-left:.25rem;">match</span>
+                          {% else %}
+                            {{ k }}: {{ v }}
+                          {% endif %}
+                        </li>
+                      {% endfor %}
+                    {% else %}
+                      <li style="color:#666;">None</li>
+                    {% endif %}
+                  </ul>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+  <script>
+    function toggleDetails(id, btn) {
+      const row = document.getElementById(id);
+      if (!row) return;
+      const show = row.style.display === 'none' || row.style.display === '';
+      row.style.display = show ? 'table-row' : 'none';
+      if (btn) btn.textContent = show ? 'Hide' : 'View';
+    }
+  </script>
+  </html>
+
+
