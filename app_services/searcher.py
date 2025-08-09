@@ -78,7 +78,7 @@ def search_candidates(queries: List[str], original_url: str) -> List[str]:
     for q in queries:
         # Exclude original domain
         qx = f"{q} -site:{original_domain}"
-        for url in _serpapi_search(qx, num=15):
+        for url in _serpapi_search(qx, num=10):
             if not _looks_like_product_url(url):
                 continue
             d = get_domain(url)
@@ -88,21 +88,6 @@ def search_candidates(queries: List[str], original_url: str) -> List[str]:
                 continue
             seen_domains.add(d)
             candidates.append(url)
-
-    # Preferentially try to find a result on bettymills.com if it exists
-    try:
-        bm_query = f"{queries[0]} site:bettymills.com" if queries else "site:bettymills.com"
-        for url in _serpapi_search(bm_query, num=10):
-            if not _looks_like_product_url(url):
-                continue
-            d = get_domain(url)
-            if d == original_domain or d in seen_domains:
-                continue
-            seen_domains.add(d)
-            candidates.append(url)
-            break  # add at most one to avoid crowding
-    except Exception:
-        pass
 
     return candidates[:20]
 
