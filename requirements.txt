@@ -6,4 +6,5 @@ rapidfuzz==3.9.6
 openai==1.40.2
 python-dotenv==1.0.1
 urllib3==2.2.2
+gunicorn
 
